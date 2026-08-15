@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node scripts/dev.mjs --web",
     "start:metro": "expo start --web",
+    "devtools": "react-devtools",
     "media": "node scripts/media-server.mjs",
     "web": "node scripts/dev.mjs --web",
     "export:web": "expo export --platform web",
@@ -45,6 +46,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.4",
+    "react-devtools": "^7.0.1",
     "typescript": "~6.0.3"
   }
 }
