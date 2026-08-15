@@ -88,7 +88,7 @@ export function NotesList({ notes, index }: { notes: NoteItem[]; index: number }
     <MenuList
       rows={notes.map((n) => ({ id: n.id, label: n.title, chevron: true, action: { type: 'noop' } }))}
       selectedIndex={index}
-      visibleCount={8}
+      visibleCount={10}
     />
   );
 }
