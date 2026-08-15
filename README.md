@@ -79,4 +79,4 @@ eas build --platform android --profile preview
 
 ## Stack
 
-Expo SDK 57, React Native, TypeScript, Zustand, expo-audio, expo-video, expo-file-system, expo-media-library.
+Expo SDK 54 (Expo Go 54), React Native 0.81, TypeScript, Zustand, expo-audio, expo-video, expo-file-system, expo-media-library.

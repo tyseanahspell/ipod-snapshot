@@ -1,8 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { Platform } from 'react-native';
 import {
   createAudioPlayer,
-  requestNotificationPermissionsAsync,
   setAudioModeAsync,
   type AudioPlayer,
 } from 'expo-audio';
@@ -39,13 +37,6 @@ export function PlaybackController() {
         interruptionModeAndroid: 'doNotMix',
         interruptionMode: 'doNotMix',
       });
-      if (Platform.OS === 'android') {
-        try {
-          await requestNotificationPermissionsAsync();
-        } catch {
-          /* optional */
-        }
-      }
     })();
   }, []);
 

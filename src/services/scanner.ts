@@ -1,6 +1,6 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
-import * as MediaLibrary from 'expo-media-library/legacy';
+import * as MediaLibrary from 'expo-media-library';
 import type { Library, NoteItem, PhotoItem, Song, VideoItem } from '../types';
 import {
   AUDIO_EXT,
@@ -136,29 +136,18 @@ function collectFromDirectory(root: Directory, onList: (n: number) => void): Raw
   while (stack.length && out.length < MAX_FILES) {
     const { dir, depth } = stack.pop()!;
     if (depth > MAX_DEPTH) continue;
-    let records: { isDirectory: boolean; uri: string }[] = [];
+    let listed: (Directory | File)[] = [];
     try {
-      records = dir.listAsRecords();
+      listed = dir.list();
     } catch {
-      try {
-        const listed = dir.list();
-        records = listed.map((entry) => ({
-          isDirectory: isDir(entry),
-          uri: entry.uri,
-        }));
-      } catch {
-        continue;
-      }
+      continue;
     }
-    for (const rec of records) {
-      const name = decodeName(rec.uri);
-      if (rec.isDirectory) {
+    for (const entry of listed) {
+      const directory = isDir(entry);
+      const name = decodeName(entry.uri);
+      if (directory) {
         if (shouldSkipDir(name)) continue;
-        try {
-          stack.push({ dir: new Directory(rec.uri), depth: depth + 1 });
-        } catch {
-          /* ignore */
-        }
+        stack.push({ dir: entry as Directory, depth: depth + 1 });
         continue;
       }
       const ext = extOf(name);
@@ -169,10 +158,10 @@ function collectFromDirectory(root: Directory, onList: (n: number) => void): Raw
       else if (ext === '.txt') kind = 'text';
       if (!kind) continue;
       out.push({
-        uri: rec.uri,
+        uri: entry.uri,
         name,
-        folder: parentFolder(rec.uri),
-        parentUri: rec.uri.replace(/\/[^/]+\/?$/, ''),
+        folder: parentFolder(entry.uri),
+        parentUri: entry.uri.replace(/\/[^/]+\/?$/, ''),
         ext,
         kind,
       });
@@ -347,8 +336,13 @@ export async function scanDirectory(
 }
 
 export async function pickAndScan(onProgress?: (p: ScanProgress) => void): Promise<Library> {
-  const dir = await Directory.pickDirectoryAsync();
-  return scanDirectory(dir, onProgress);
+  const pick = (
+    Directory as typeof Directory & {
+      pickDirectoryAsync: (initialUri?: string) => Promise<{ uri: string }>;
+    }
+  ).pickDirectoryAsync;
+  const picked = await pick();
+  return scanDirectory(new Directory(picked.uri), onProgress);
 }
 
 export async function scanMediaLibrary(onProgress?: (p: ScanProgress) => void): Promise<Library> {

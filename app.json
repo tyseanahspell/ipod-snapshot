@@ -49,12 +49,10 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "iPod nano records voice memos with the microphone.",
-          "enableBackgroundPlayback": true
+          "microphonePermission": "iPod nano records voice memos with the microphone."
         }
       ],
       "expo-video",
-      "expo-image",
       [
         "expo-splash-screen",
         {
@@ -71,12 +69,7 @@
           "granularPermissions": ["photo", "video", "audio"]
         }
       ],
-      [
-        "expo-file-system",
-        {
-          "supportsOpeningDocumentsInPlace": true
-        }
-      ]
+      "expo-file-system"
     ]
   }
 }
