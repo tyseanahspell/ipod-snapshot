@@ -1,4 +1,4 @@
-import type { Library, MenuAction, MenuContext, MenuRow, PhotoItem, Song, VideoItem } from '../types';
+import type { Library, MenuAction, MenuContext, MenuRow, PhotoItem, PreviewKind, Song, VideoItem } from '../types';
 import { albumsOf, photoAlbums, songsByArtist, songsByComposer, songsByGenre, tvShows, videosOfKind } from '../store/libraryStore';
 import { BACKLIGHT_OPTIONS, EQ_PRESETS, type SettingsState } from '../store/settingsStore';
 import { FINISHES } from '../theme';
@@ -20,16 +20,21 @@ export function playableSongs(library: Library): Song[] {
   return library.songs.filter((s) => s.kind === 'song' || s.kind === 'musicVideo');
 }
 
-export function artworkForMenu(menuId: string, library: Library, context?: MenuContext): string[] {
-  const albums = albumsOf(library);
-  const arts = albums.map((a) => a.artworkUri).filter((u): u is string => Boolean(u));
-  if (menuId === 'main' || menuId === 'music' || menuId === 'shuffle') return arts.slice(0, 12);
-  if (menuId === 'videos') return library.videos.map((v) => v.artworkUri).filter((u): u is string => Boolean(u)).slice(0, 12);
-  if (menuId === 'photos') return library.photos.map((p) => p.uri).slice(0, 12);
+export function artworkForPreview(kind: PreviewKind, library: Library, context?: MenuContext): string[] {
+  const unique = (uris: Array<string | undefined>) => [...new Set(uris.filter((u): u is string => Boolean(u)))];
+  if (kind === 'videos') return unique(library.videos.map((v) => v.artworkUri));
+  if (kind === 'photos') return unique(library.photos.map((p) => p.uri));
   if (context?.artist) {
-    return albums.filter((a) => a.artist === context.artist).map((a) => a.artworkUri).filter((u): u is string => Boolean(u));
+    return unique(
+      albumsOf(library)
+        .filter((a) => a.artist === context.artist)
+        .flatMap((a) => [a.artworkUri, ...a.songs.map((s) => s.artworkUri)]),
+    );
   }
-  return arts.slice(0, 8);
+  return unique([
+    ...albumsOf(library).map((a) => a.artworkUri),
+    ...library.songs.map((s) => s.artworkUri),
+  ]);
 }
 
 export function buildMenu(

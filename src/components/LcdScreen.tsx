@@ -28,7 +28,7 @@ import { currentSong, usePlayer } from '../store/playerStore';
 import { screenOf, useNav } from '../store/navStore';
 import { useSettings } from '../store/settingsStore';
 import { useExtras } from '../store/extrasStore';
-import { artworkForMenu, buildMenu, photosFor } from '../navigation/menus';
+import { artworkForPreview, buildMenu, photosFor } from '../navigation/menus';
 import type { PreviewKind } from '../types';
 
 function previewKind(menuId?: string, selectedLabel?: string): PreviewKind {
@@ -92,7 +92,7 @@ export function LcdScreen({ battery, charging }: { battery: number; charging?: b
   const paused = !player.isPlaying && Boolean(song || player.source === 'radio');
   const selected = rows[screen.selectedIndex];
   const pKind = previewKind(screen.menuId, selected?.label);
-  const images = artworkForMenu(screen.menuId ?? 'main', library, screen.context);
+  const images = artworkForPreview(pKind, library, screen.context);
   const showPreview = settings.previewPanel && screen.kind === 'menu' && screen.menuId === 'main';
   const visibleCount = showPreview ? 6 : 8;
   const gb = ((library.bytes ?? 0) / (1024 * 1024 * 1024)).toFixed(1);

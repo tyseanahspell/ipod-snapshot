@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { SCREEN } from '../theme';
 import type { PreviewKind } from '../types';
@@ -22,31 +22,32 @@ function carouselSet(images: string[]): string[] {
   return set;
 }
 
+const VISIBLE = 12;
+
 function ArtworkCarousel({ images }: { images: string[] }) {
-  const offset = useRef(new Animated.Value(0)).current;
   const signature = images.join('\0');
   const set = useMemo(() => carouselSet(images), [signature]);
-  const track = useMemo(() => (set.length ? [...set, ...set] : []), [set]);
+  const [shift, setShift] = useState(0);
 
   useEffect(() => {
-    offset.setValue(0);
     if (set.length === 0) return undefined;
-    const anim = Animated.loop(
-      Animated.timing(offset, {
-        toValue: -(set.length * ITEM),
-        duration: set.length * MS_PER_COVER,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-    );
-    anim.start();
-    return () => {
-      anim.stop();
-      offset.stopAnimation();
+    const width = set.length * ITEM;
+    let pos = 0;
+    let last = performance.now();
+    let raf = 0;
+    const speed = ITEM / MS_PER_COVER;
+    const tick = (now: number) => {
+      const dt = Math.min(48, now - last);
+      last = now;
+      pos = (pos + speed * dt) % width;
+      setShift(pos);
+      raf = requestAnimationFrame(tick);
     };
-  }, [offset, set.length, signature]);
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [set.length, signature]);
 
-  if (track.length === 0) {
+  if (set.length === 0) {
     return (
       <View style={styles.strip}>
         {Array.from({ length: 5 }, (_, i) => (
@@ -58,13 +59,22 @@ function ArtworkCarousel({ images }: { images: string[] }) {
     );
   }
 
+  const start = Math.floor(shift / ITEM);
+  const tiles = Array.from({ length: Math.min(VISIBLE, set.length + 2) }, (_, i) => {
+    const index = (start + i) % set.length;
+    return { uri: set[index], x: (start + i) * ITEM - shift, key: `${start + i}` };
+  });
+
   return (
     <View style={styles.viewport}>
-      <Animated.View style={[styles.track, { transform: [{ translateX: offset }] }]}>
-        {track.map((uri, i) => (
-          <Image key={`${uri}-${i}`} source={{ uri }} style={styles.thumb} contentFit="cover" />
-        ))}
-      </Animated.View>
+      {tiles.map((tile) => (
+        <Image
+          key={tile.key}
+          source={{ uri: tile.uri }}
+          style={[styles.thumb, styles.floating, { left: tile.x + 6 }]}
+          contentFit="cover"
+        />
+      ))}
     </View>
   );
 }
@@ -115,11 +125,11 @@ const styles = StyleSheet.create({
   viewport: {
     height: THUMB,
     overflow: 'hidden',
+    position: 'relative',
   },
-  track: {
-    flexDirection: 'row',
-    gap: GAP,
-    paddingLeft: 6,
+  floating: {
+    position: 'absolute',
+    top: 0,
   },
   strip: { flexDirection: 'row', gap: GAP, justifyContent: 'center', paddingHorizontal: 6 },
   thumb: { width: THUMB, height: THUMB, backgroundColor: SCREEN.artworkBg },
