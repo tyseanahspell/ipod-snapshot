@@ -20,7 +20,10 @@
         "NSAppleMusicUsageDescription": "iPod nano needs access to your music library so songs can appear in Music.",
         "NSPhotoLibraryUsageDescription": "iPod nano needs access to photos and videos so they can appear in Photos and Videos.",
         "NSMicrophoneUsageDescription": "iPod nano records voice memos with the microphone.",
-        "NSMotionUsageDescription": "iPod nano uses motion for shake-to-shuffle and Cover Flow."
+        "NSMotionUsageDescription": "iPod nano uses motion for shake-to-shuffle and Cover Flow.",
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
       }
     },
     "android": {

@@ -20,9 +20,10 @@ The Click Wheel scrolls lists, the center button selects, **MENU** goes back (ho
 
 ## Load your library
 
-1. After the Apple boot screen, open **Library** (also under Settings).
-2. Choose **Choose Storage Folder** and pick the root of the volume (for example Android internal storage, `Music`, or a mounted drive).
-3. Or choose **Scan Device Library** to import from the system media library.
+1. After the Apple boot screen, open **Settings → Library**.
+2. Choose **Computer Folder** to pick a folder on the machine running `npm start`. A native folder dialog opens on that computer; the phone then streams music, videos, and photos over the local network.
+3. Or choose **Phone Folder** and pick a folder on the device (internal storage, SD card, USB OTG).
+4. Or choose **Device Library** to import from the system media library.
 
 The scanner:
 
@@ -36,10 +37,26 @@ The scanner:
 
 ```bash
 npm install
-npx expo start
+npm start
 ```
 
-Scan the QR code with Expo Go for a quick look. Folder access, background audio, and lock-screen controls are complete in a **development or production build**:
+That starts Expo and a local media server on port **3847**. Scan the QR code with Expo Go. The phone and the computer must be on the same Wi‑Fi.
+
+To pick a folder from the terminal instead of the in-app menu:
+
+```bash
+npm run media -- /path/to/Music
+```
+
+On WSL2 the phone often cannot reach the Linux VM IP. Use your Windows LAN address:
+
+```bash
+EXPO_PUBLIC_MEDIA_HOST=192.168.1.50 npm start
+```
+
+You can also set `"extra": { "mediaHost": "192.168.1.50" }` in `app.json`. Phone folder and device library still work if the computer server is unreachable.
+
+Folder access on the phone, background audio, and lock-screen controls are complete in a **development or production build**:
 
 ```bash
 npx expo prebuild
@@ -73,7 +90,8 @@ eas build --platform android --profile preview
 ## Notes
 
 - Radio uses public SomaFM streams presented as an FM tuner. Phones do not have a real FM chip.
-- iOS folder access is granted per session; pick the folder again after a restart, or use Scan Device Library.
+- Computer Folder streams from the build machine. Keep `npm start` running. The last folder is remembered in `.media-root`.
+- iOS folder access is granted per session; pick the folder again after a restart, or use Device Library.
 - Android Storage Access Framework keeps folder permission across launches.
 - Background playback and lock-screen metadata need a native build (`expo-audio` lock screen + `UIBackgroundModes` / foreground service).
 

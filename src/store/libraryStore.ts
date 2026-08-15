@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Directory } from 'expo-file-system';
 import { EMPTY_LIBRARY, type Library, type PhotoItem, type Song, type VideoItem } from '../types';
 import {
+  fetchComputerLibrary,
   loadLibraryCache,
   pickAndScan,
   saveLibraryCache,
@@ -17,6 +18,7 @@ export interface LibraryState {
   error?: string;
   hydrate: () => Promise<void>;
   pickFolder: () => Promise<void>;
+  pickComputerFolder: () => Promise<void>;
   scanDevice: () => Promise<void>;
   rescan: () => Promise<void>;
 }
@@ -111,7 +113,7 @@ async function runScan(fn: () => Promise<Library>, set: (p: Partial<LibraryState
     set({ library, loading: false, progress: undefined });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Scan failed';
-    if (/cancel/i.test(message)) {
+    if (/cancel/i.test(message) || /no folder selected/i.test(message)) {
       set({ loading: false, progress: undefined });
       return;
     }
@@ -133,6 +135,12 @@ export const useLibrary = create<LibraryState>((set, get) => ({
       set,
     );
   },
+  pickComputerFolder: async () => {
+    await runScan(
+      () => fetchComputerLibrary(true, (progress) => set({ progress })),
+      set,
+    );
+  },
   scanDevice: async () => {
     await runScan(
       () => scanMediaLibrary((progress) => set({ progress })),
@@ -142,7 +150,14 @@ export const useLibrary = create<LibraryState>((set, get) => ({
   rescan: async () => {
     const uri = get().library.rootUri;
     if (!uri) {
-      await get().pickFolder();
+      await get().pickComputerFolder();
+      return;
+    }
+    if (uri.startsWith('computer://')) {
+      await runScan(
+        () => fetchComputerLibrary(false, (progress) => set({ progress })),
+        set,
+      );
       return;
     }
     if (uri.startsWith('media-library://')) {

@@ -2,6 +2,7 @@ import { Directory, File, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
 import * as MediaLibrary from 'expo-media-library';
 import type { Library, NoteItem, PhotoItem, Song, VideoItem } from '../types';
+import { computerBaseUrl, localizeLibrary } from './host';
 import {
   AUDIO_EXT,
   COVER_NAMES,
@@ -449,8 +450,35 @@ export async function loadLibraryCache(): Promise<Library | null> {
     if (!file.exists) return null;
     const parsed = JSON.parse(await file.text()) as Library;
     if (!parsed || !Array.isArray(parsed.songs)) return null;
+    if (parsed.rootUri?.startsWith('computer://')) return localizeLibrary(parsed);
     return parsed;
   } catch {
     return null;
   }
+}
+
+export async function fetchComputerLibrary(pick: boolean, onProgress?: (p: ScanProgress) => void): Promise<Library> {
+  const base = computerBaseUrl();
+  onProgress?.({
+    phase: 'listing',
+    files: 0,
+    tagged: 0,
+    message: pick ? 'Choose a folder on the computer…' : 'Loading computer library…',
+  });
+  const url = pick ? `${base}/pick` : `${base}/catalog`;
+  let res: Response;
+  try {
+    res = await fetch(url, { method: pick ? 'POST' : 'GET' });
+  } catch {
+    throw new Error('Cannot reach the computer. Run npm start on the same Wi-Fi, then try again.');
+  }
+  const body = (await res.json().catch(() => ({}))) as Library & { error?: string };
+  if (!res.ok) {
+    throw new Error(body.error || `Computer library failed (${res.status})`);
+  }
+  if (!Array.isArray(body.songs)) {
+    throw new Error('Computer library returned an invalid catalog');
+  }
+  onProgress?.({ phase: 'done', files: body.songs.length, tagged: body.songs.length, message: 'Done' });
+  return localizeLibrary(body);
 }

@@ -315,12 +315,23 @@ export function buildMenu(
           chevron: false,
         }),
       );
-    case 'library':
+    case 'library': {
+      const computer = library.rootUri?.startsWith('computer://');
+      const device = library.rootUri?.startsWith('media-library://');
+      const phone = Boolean(library.rootUri) && !computer && !device;
       return [
-        row('folder', 'Choose Storage Folder', { type: 'pickFolder' }),
-        row('device', 'Scan Device Library', { type: 'scanMediaLibrary' }),
+        row('computer', 'Computer Folder', { type: 'pickComputerFolder' }, {
+          value: computer ? library.rootName : undefined,
+        }),
+        row('folder', 'Phone Folder', { type: 'pickFolder' }, {
+          value: phone ? library.rootName : undefined,
+        }),
+        row('device', 'Device Library', { type: 'scanMediaLibrary' }, {
+          value: device ? 'On' : undefined,
+        }),
         row('rescan', 'Update Library', { type: 'rescan' }),
       ];
+    }
     default:
       return [row('empty', 'No items', { type: 'noop' })];
   }

@@ -121,6 +121,7 @@ export type MenuAction =
   | { type: 'cycleSetting'; key: string }
   | { type: 'setSetting'; key: string; value: string | number | boolean }
   | { type: 'pickFolder' }
+  | { type: 'pickComputerFolder' }
   | { type: 'scanMediaLibrary' }
   | { type: 'rescan' }
   | { type: 'resetSettings' }

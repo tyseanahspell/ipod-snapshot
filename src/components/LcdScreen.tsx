@@ -62,6 +62,7 @@ export function LcdScreen({ battery, charging }: { battery: number; charging?: b
   const library = useLibrary((s) => s.library);
   const loading = useLibrary((s) => s.loading);
   const progress = useLibrary((s) => s.progress);
+  const error = useLibrary((s) => s.error);
   const settings = useSettings();
   const player = usePlayer();
   const extras = useExtras();
@@ -181,6 +182,11 @@ export function LcdScreen({ battery, charging }: { battery: number; charging?: b
         />
       ) : null}
       <View style={styles.body}>{body}</View>
+      {error && !loading ? (
+        <View style={styles.error}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
       {nav.letterOverlay && screen.kind === 'menu' && rows.length > 20 ? (
         <View style={styles.letter}>
           <Text style={styles.letterText}>{nav.letterOverlay}</Text>
@@ -204,4 +210,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.2)',
   },
   letterText: { color: '#fff', fontSize: 64, fontWeight: '700' },
+  error: {
+    position: 'absolute',
+    left: 6,
+    right: 6,
+    bottom: 6,
+    backgroundColor: 'rgba(0,0,0,0.82)',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  errorText: { color: '#ffb4b4', fontSize: 10, textAlign: 'center' },
 });
