@@ -3,7 +3,7 @@ import { setAudioModeAsync, useAudioPlayerStatus } from 'expo-audio';
 import { currentSong, usePlayer } from '../store/playerStore';
 import { useSettings } from '../store/settingsStore';
 import { activateKeepAwakeAsync, deactivateKeepAwake, isAvailableAsync } from 'expo-keep-awake';
-import { currentSourceUri, getAudioPlayer, loadSource, pauseSource, playSource } from './engine';
+import { currentSourceUri, getAudioPlayer, loadSource, pauseSource, playSource, reportTrackEnded, setOnTrackEnded } from './engine';
 
 export function PlaybackController() {
   const isPlaying = usePlayer((s) => s.isPlaying);
@@ -18,6 +18,15 @@ export function PlaybackController() {
   const finished = useRef(false);
   const player = getAudioPlayer();
   const status = useAudioPlayerStatus(player);
+
+  useEffect(() => {
+    setOnTrackEnded(() => {
+      const store = usePlayer.getState();
+      if (store.source !== 'library' || store.queue.length === 0) return;
+      store.next();
+    });
+    return () => setOnTrackEnded(null);
+  }, []);
 
   useEffect(() => {
     void (async () => {
@@ -39,7 +48,7 @@ export function PlaybackController() {
     if (status.didJustFinish && store.source === 'library') {
       if (!finished.current) {
         finished.current = true;
-        store.next();
+        reportTrackEnded();
       }
     } else {
       finished.current = false;
