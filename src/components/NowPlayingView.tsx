@@ -37,7 +37,7 @@ export function NowPlayingView({ song, position, duration, page, shuffle, repeat
   return (
     <View style={styles.wrap}>
       <View style={styles.details}>
-        <Text numberOfLines={1} style={styles.title}>
+        <Text numberOfLines={1} style={styles.sub}>
           {song?.artist ?? ''}
         </Text>
         <Text numberOfLines={1} style={styles.title}>
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: SCREEN.bg },
   details: { paddingHorizontal: 8, paddingTop: 6, paddingBottom: 6 },
   title: { color: '#fff', fontSize: 13, fontWeight: '700', textAlign: 'center' },
-  sub: { color: '#c8c8c8', fontSize: 11, marginTop: 2 },
+  sub: { color: '#c8c8c8', fontSize: 11, marginTop: 2, textAlign: 'center' },
   icons: { flexDirection: 'row', gap: 6, marginTop: 4, minHeight: 14 },
   glyph: { fontSize: 11 },
   block: { marginTop: 6 },
