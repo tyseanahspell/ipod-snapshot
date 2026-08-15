@@ -7,16 +7,13 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "scheme": "ipodnano",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#000000"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ipodsnapshot.nano",
       "infoPlist": {
-        "UIBackgroundModes": ["audio"],
+        "UIBackgroundModes": [
+          "audio"
+        ],
         "NSAppleMusicUsageDescription": "iPod nano needs access to your music library so songs can appear in Music.",
         "NSPhotoLibraryUsageDescription": "iPod nano needs access to photos and videos so they can appear in Photos and Videos.",
         "NSMicrophoneUsageDescription": "iPod nano records voice memos with the microphone.",
@@ -55,7 +52,8 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "iPod nano records voice memos with the microphone."
+          "microphonePermission": "iPod nano records voice memos with the microphone.",
+          "enableBackgroundPlayback": true
         }
       ],
       "expo-video",
@@ -63,7 +61,8 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#000000",
-          "image": "./assets/splash-icon.png"
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain"
         }
       ],
       "expo-font",
@@ -72,10 +71,16 @@
         "expo-media-library",
         {
           "photosPermission": "iPod nano needs photos and videos to fill Photos and Videos.",
-          "granularPermissions": ["photo", "video", "audio"]
+          "granularPermissions": [
+            "photo",
+            "video",
+            "audio"
+          ]
         }
       ],
-      "expo-file-system"
+      "expo-file-system",
+      "expo-image",
+      "expo-status-bar"
     ]
   }
 }

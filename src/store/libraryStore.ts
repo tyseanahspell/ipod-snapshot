@@ -10,9 +10,9 @@ import {
   pickAndScanBrowser,
   saveLibraryCache,
   scanDirectory,
-  scanMediaLibrary,
   type ScanProgress,
 } from '../services/scanner';
+import { scanMediaLibrary } from '../services/deviceLibrary';
 
 export interface LibraryState {
   library: Library;
@@ -193,6 +193,10 @@ export const useLibrary = create<LibraryState>((set, get) => ({
     }
     if (uri.startsWith('media-library://')) {
       await get().scanDevice();
+      return;
+    }
+    if (Platform.OS === 'web') {
+      await get().pickComputerFolder();
       return;
     }
     await runScan(

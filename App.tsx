@@ -3,7 +3,7 @@ import { Platform, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Accelerometer } from 'expo-sensors';
 import * as Battery from 'expo-battery';
-import * as NavigationBar from 'expo-navigation-bar';
+import { NavigationBar } from 'expo-navigation-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { PlaybackController } from './src/audio/PlaybackController';

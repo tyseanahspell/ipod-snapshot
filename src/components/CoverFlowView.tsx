@@ -50,10 +50,7 @@ const styles = StyleSheet.create({
   right: { transform: [{ perspective: 400 }, { rotateY: '-55deg' }, { scale: 0.86 }] },
   center: {
     zIndex: 2,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
+    boxShadow: '0px 4px 8px rgba(0,0,0,0.6)',
   },
   album: { color: '#fff', textAlign: 'center', fontWeight: '700', fontSize: 13, marginTop: 10 },
   artist: { color: '#bbb', textAlign: 'center', fontSize: 11, marginTop: 2 },

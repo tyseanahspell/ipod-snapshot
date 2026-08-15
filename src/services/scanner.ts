@@ -1,6 +1,5 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
-import * as MediaLibrary from 'expo-media-library';
 import type { Library, NoteItem, PhotoItem, Song, VideoItem } from '../types';
 import { computerBaseUrl, localizeLibrary } from './host';
 import {
@@ -78,7 +77,7 @@ function guessFromPath(uri: string): { artist?: string; album?: string } {
 }
 
 async function writeArtwork(id: string, mime: string, bytes: Uint8Array): Promise<string | undefined> {
-  if (bytes.length < 40) return undefined;
+  if (Platform.OS === 'web' || bytes.length < 40) return undefined;
   const ext = mime.includes('png') ? 'png' : 'jpg';
   try {
     const file = new File(Paths.cache, `art-${id}.${ext}`);
@@ -337,122 +336,48 @@ export async function scanDirectory(
 }
 
 export async function pickAndScan(onProgress?: (p: ScanProgress) => void): Promise<Library> {
-  const pick = (
-    Directory as typeof Directory & {
-      pickDirectoryAsync: (initialUri?: string) => Promise<{ uri: string }>;
-    }
-  ).pickDirectoryAsync;
-  const picked = await pick();
-  return scanDirectory(new Directory(picked.uri), onProgress);
+  if (Platform.OS === 'web') {
+    throw new Error('Folder picking is not available in the browser.');
+  }
+  const picked = await Directory.pickDirectoryAsync();
+  return scanDirectory(picked, onProgress);
 }
 
-export async function scanMediaLibrary(onProgress?: (p: ScanProgress) => void): Promise<Library> {
-  const perm = await MediaLibrary.requestPermissionsAsync();
-  if (!perm.granted) {
-    throw new Error('Media access was not granted');
-  }
-  onProgress?.({ phase: 'listing', files: 0, tagged: 0, message: 'Reading device library…' });
+const WEB_CACHE_KEY = 'ipod-library-cache';
 
-  const songs: Song[] = [];
-  const videos: VideoItem[] = [];
-  const photos: PhotoItem[] = [];
-
-  async function drain(mediaType: MediaLibrary.MediaTypeValue) {
-    let after: string | undefined;
-    let hasNext = true;
-    while (hasNext) {
-      const page = await MediaLibrary.getAssetsAsync({
-        mediaType,
-        first: 200,
-        after,
-        sortBy: [MediaLibrary.SortBy.creationTime],
-      });
-      for (const asset of page.assets) {
-        const info = await MediaLibrary.getAssetInfoAsync(asset, { shouldDownloadFromNetwork: false });
-        const uri = info.localUri ?? info.uri;
-        if (!uri) continue;
-        if (mediaType === MediaLibrary.MediaType.audio) {
-          songs.push({
-            id: hashId(uri),
-            uri,
-            title: info.filename.replace(/\.[^.]+$/, ''),
-            artist: 'Unknown Artist',
-            album: 'Unknown Album',
-            albumArtist: 'Unknown Artist',
-            genre: 'Unknown',
-            composer: '',
-            duration: info.duration || undefined,
-            kind: 'song',
-            playCount: 0,
-            rating: 0,
-            folder: 'Media Library',
-          });
-        } else if (mediaType === MediaLibrary.MediaType.video) {
-          videos.push({
-            id: hashId(uri),
-            uri,
-            title: info.filename.replace(/\.[^.]+$/, ''),
-            kind: 'movie',
-            duration: info.duration || undefined,
-            folder: 'Media Library',
-          });
-        } else {
-          photos.push({
-            id: hashId(uri),
-            uri,
-            album: 'Photo Library',
-            folder: 'Photo Library',
-          });
-        }
-      }
-      hasNext = page.hasNextPage;
-      after = page.endCursor;
-      onProgress?.({
-        phase: 'listing',
-        files: songs.length + videos.length + photos.length,
-        tagged: 0,
-        message: `Found ${songs.length + videos.length + photos.length} items`,
-      });
-    }
-  }
-
-  await drain(MediaLibrary.MediaType.audio);
-  await drain(MediaLibrary.MediaType.video);
-  await drain(MediaLibrary.MediaType.photo);
-
-  songs.sort((a, b) => a.title.localeCompare(b.title));
-  onProgress?.({ phase: 'done', files: songs.length + videos.length + photos.length, tagged: songs.length, message: 'Done' });
-  return {
-    songs,
-    videos,
-    photos,
-    notes: [],
-    scannedAt: Date.now(),
-    rootUri: `media-library://${Platform.OS}`,
-    rootName: 'Device Library',
-  };
+function parseCachedLibrary(raw: string): Library | null {
+  const parsed = JSON.parse(raw) as Library;
+  if (!parsed || !Array.isArray(parsed.songs)) return null;
+  if (parsed.rootUri?.startsWith('computer://')) return localizeLibrary(parsed);
+  if (parsed.rootUri?.startsWith('browser://')) return null;
+  return parsed;
 }
 
 export async function saveLibraryCache(library: Library): Promise<void> {
-  const file = new File(Paths.document, 'library-cache.json');
   try {
+    const payload = JSON.stringify(library);
+    if (Platform.OS === 'web') {
+      localStorage.setItem(WEB_CACHE_KEY, payload);
+      return;
+    }
+    const file = new File(Paths.document, 'library-cache.json');
     if (file.exists) file.delete();
     file.create();
-    file.write(JSON.stringify(library));
+    file.write(payload);
   } catch {
-    /* ignore */
+    /* ignore quota / filesystem errors */
   }
 }
 
 export async function loadLibraryCache(): Promise<Library | null> {
   try {
+    if (Platform.OS === 'web') {
+      const raw = localStorage.getItem(WEB_CACHE_KEY);
+      return raw ? parseCachedLibrary(raw) : null;
+    }
     const file = new File(Paths.document, 'library-cache.json');
     if (!file.exists) return null;
-    const parsed = JSON.parse(await file.text()) as Library;
-    if (!parsed || !Array.isArray(parsed.songs)) return null;
-    if (parsed.rootUri?.startsWith('computer://')) return localizeLibrary(parsed);
-    if (parsed.rootUri?.startsWith('browser://')) return null;
-    return parsed;
+    return parseCachedLibrary(await file.text());
   } catch {
     return null;
   }

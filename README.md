@@ -60,4 +60,4 @@ Main menu:
 
 ## Stack
 
-Expo SDK 54 (web), React Native Web, TypeScript, Zustand, expo-audio, expo-video. Production is a static export plus a Node media server in Docker.
+Expo SDK 57 (web), React Native Web, TypeScript, Zustand, expo-audio, expo-video. Production is a static export plus a Node media server in Docker.

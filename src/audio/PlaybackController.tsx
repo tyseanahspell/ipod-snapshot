@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import {
   createAudioPlayer,
   setAudioModeAsync,
+  useAudioPlayerStatus,
   type AudioPlayer,
 } from 'expo-audio';
 import { currentSong, usePlayer } from '../store/playerStore';
@@ -28,37 +29,39 @@ export function PlaybackController() {
   const song = usePlayer(currentSong);
   const limit = useSettings((s) => s.volumeLimit);
   const loadedUri = useRef<string | null>(null);
+  const finished = useRef(false);
+  const player = getPlayer();
+  const status = useAudioPlayerStatus(player);
 
   useEffect(() => {
     void (async () => {
       await setAudioModeAsync({
         playsInSilentMode: true,
         shouldPlayInBackground: true,
-        interruptionModeAndroid: 'doNotMix',
         interruptionMode: 'doNotMix',
       });
     })();
   }, []);
 
   useEffect(() => {
-    const player = getPlayer();
-    const sub = player.addListener('playbackStatusUpdate', (status) => {
-      const store = usePlayer.getState();
-      if (store.seeking) return;
-      store.setPlayback({
-        isPlaying: status.playing,
-        position: status.currentTime,
-        duration: status.duration,
-      });
-      if (status.didJustFinish && store.source === 'library') {
+    const store = usePlayer.getState();
+    if (store.seeking) return;
+    store.setPlayback({
+      isPlaying: status.playing,
+      position: status.currentTime,
+      duration: status.duration,
+    });
+    if (status.didJustFinish && store.source === 'library') {
+      if (!finished.current) {
+        finished.current = true;
         store.next();
       }
-    });
-    return () => sub.remove();
-  }, []);
+    } else {
+      finished.current = false;
+    }
+  }, [status]);
 
   useEffect(() => {
-    const player = getPlayer();
     const uri = source === 'radio' ? radioUri : song?.uri;
     if (!uri) {
       player.pause();
@@ -84,17 +87,16 @@ export function PlaybackController() {
       player.pause();
       void deactivateKeepAwake('nano-playback');
     }
-  }, [song?.uri, song?.title, song?.artist, song?.album, song?.artworkUri, isPlaying, volume, limit, source, radioUri, repeat]);
+  }, [player, song?.uri, song?.title, song?.artist, song?.album, song?.artworkUri, isPlaying, volume, limit, source, radioUri, repeat]);
 
   useEffect(() => {
-    const player = getPlayer();
     player.loop = repeat === 'one' && source === 'library';
-  }, [repeat, source]);
+  }, [player, repeat, source]);
 
   useEffect(() => {
     if (page !== 'scrub') return;
-    void getPlayer().seekTo(position);
-  }, [position, page]);
+    void player.seekTo(position);
+  }, [player, position, page]);
 
   return null;
 }
