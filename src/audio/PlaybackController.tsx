@@ -1,22 +1,9 @@
 import { useEffect, useRef } from 'react';
-import {
-  createAudioPlayer,
-  setAudioModeAsync,
-  useAudioPlayerStatus,
-  type AudioPlayer,
-} from 'expo-audio';
+import { setAudioModeAsync, useAudioPlayerStatus } from 'expo-audio';
 import { currentSong, usePlayer } from '../store/playerStore';
 import { useSettings } from '../store/settingsStore';
 import { activateKeepAwakeAsync, deactivateKeepAwake, isAvailableAsync } from 'expo-keep-awake';
-
-let shared: AudioPlayer | null = null;
-
-function getPlayer(): AudioPlayer {
-  if (!shared) {
-    shared = createAudioPlayer(null, { updateInterval: 250, keepAudioSessionActive: true });
-  }
-  return shared;
-}
+import { currentSourceUri, getAudioPlayer, loadSource, pauseSource, playSource } from './engine';
 
 export function PlaybackController() {
   const isPlaying = usePlayer((s) => s.isPlaying);
@@ -28,9 +15,8 @@ export function PlaybackController() {
   const page = usePlayer((s) => s.page);
   const song = usePlayer(currentSong);
   const limit = useSettings((s) => s.volumeLimit);
-  const loadedUri = useRef<string | null>(null);
   const finished = useRef(false);
-  const player = getPlayer();
+  const player = getAudioPlayer();
   const status = useAudioPlayerStatus(player);
 
   useEffect(() => {
@@ -47,7 +33,6 @@ export function PlaybackController() {
     const store = usePlayer.getState();
     if (store.seeking) return;
     store.setPlayback({
-      isPlaying: status.playing,
       position: status.currentTime,
       duration: status.duration,
     });
@@ -64,27 +49,23 @@ export function PlaybackController() {
   useEffect(() => {
     const uri = source === 'radio' ? radioUri : song?.uri;
     if (!uri) {
-      player.pause();
-      loadedUri.current = null;
+      pauseSource();
       return;
     }
-    if (loadedUri.current !== uri) {
-      player.replace({ uri });
-      loadedUri.current = uri;
-      player.loop = repeat === 'one' && source === 'library';
-      player.setActiveForLockScreen(true, {
-        title: source === 'radio' ? usePlayer.getState().radioName ?? 'Radio' : song?.title,
-        artist: source === 'radio' ? 'FM Radio' : song?.artist,
-        albumTitle: song?.album,
-        artworkUrl: song?.artworkUri,
-      });
+    if (currentSourceUri() !== uri) {
+      if (isPlaying) playSource(uri);
+      else loadSource(uri);
+    } else if (!isPlaying) {
+      pauseSource();
     }
+    player.loop = repeat === 'one' && source === 'library';
     player.volume = Math.min(limit, volume);
-    if (isPlaying) {
-      player.play();
-    } else {
-      player.pause();
-    }
+    player.setActiveForLockScreen(true, {
+      title: source === 'radio' ? usePlayer.getState().radioName ?? 'Radio' : song?.title,
+      artist: source === 'radio' ? 'FM Radio' : song?.artist,
+      albumTitle: song?.album,
+      artworkUrl: song?.artworkUri,
+    });
   }, [player, song?.uri, song?.title, song?.artist, song?.album, song?.artworkUri, isPlaying, volume, limit, source, radioUri, repeat]);
 
   useEffect(() => {

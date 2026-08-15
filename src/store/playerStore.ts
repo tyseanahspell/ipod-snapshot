@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { RepeatMode, ShuffleMode, Song } from '../types';
+import { pauseSource, playSource, resumeSource } from '../audio/engine';
 
 export type NowPlayingPage = 'info' | 'scrub' | 'shuffle' | 'rating' | 'lyrics';
 export const NOW_PLAYING_PAGES: NowPlayingPage[] = ['info', 'scrub', 'shuffle', 'rating', 'lyrics'];
@@ -114,34 +115,44 @@ export const usePlayer = create<PlayerState>((set, get) => ({
       radioUri: undefined,
       radioName: undefined,
     });
+    playSource(queue[startIndex]?.uri);
   },
   playIndex: (index) => {
     const { queue } = get();
     if (queue.length === 0) return;
-    set({ index: (index + queue.length) % queue.length, position: 0, isPlaying: true, source: 'library' });
+    const next = (index + queue.length) % queue.length;
+    set({ index: next, position: 0, isPlaying: true, source: 'library' });
+    playSource(queue[next]?.uri);
   },
   next: () => {
     const { queue, index, repeat } = get();
     if (queue.length === 0) return;
     if (repeat === 'one') {
       set({ position: 0, isPlaying: true });
+      playSource(queue[index]?.uri);
       return;
     }
     const last = index >= queue.length - 1;
     if (last && repeat === 'off') {
       set({ isPlaying: false, position: 0 });
+      pauseSource();
       return;
     }
-    set({ index: last ? 0 : index + 1, position: 0, isPlaying: true });
+    const next = last ? 0 : index + 1;
+    set({ index: next, position: 0, isPlaying: true });
+    playSource(queue[next]?.uri);
   },
   prev: () => {
     const { queue, index, position } = get();
     if (queue.length === 0) return;
     if (position > 3) {
       set({ position: 0 });
+      playSource(queue[index]?.uri);
       return;
     }
-    set({ index: (index - 1 + queue.length) % queue.length, position: 0, isPlaying: true });
+    const prev = (index - 1 + queue.length) % queue.length;
+    set({ index: prev, position: 0, isPlaying: true });
+    playSource(queue[prev]?.uri);
   },
   skip: (delta) => {
     if (delta > 0) get().next();
@@ -150,16 +161,25 @@ export const usePlayer = create<PlayerState>((set, get) => ({
   seekTo: (position) => set({ position: Math.max(0, position) }),
   setSeeking: (seeking) => set({ seeking }),
   togglePlay: () => {
-    const { queue, source } = get();
-    if (source === 'radio') {
-      set({ isPlaying: !get().isPlaying });
+    const state = get();
+    if (state.source === 'radio') {
+      const next = !state.isPlaying;
+      set({ isPlaying: next });
+      if (next) resumeSource();
+      else pauseSource();
       return;
     }
-    if (queue.length === 0) return;
-    set({ isPlaying: !get().isPlaying });
+    if (state.queue.length === 0) return;
+    const next = !state.isPlaying;
+    set({ isPlaying: next });
+    if (next) resumeSource();
+    else pauseSource();
   },
-  stop: () => set({ isPlaying: false, source: null, radioUri: undefined }),
-  tuneRadio: (freq, station) =>
+  stop: () => {
+    pauseSource();
+    set({ isPlaying: false, source: null, radioUri: undefined });
+  },
+  tuneRadio: (freq, station) => {
     set({
       radioFreq: Math.round(freq * 10) / 10,
       radioUri: station?.uri,
@@ -168,8 +188,14 @@ export const usePlayer = create<PlayerState>((set, get) => ({
       isPlaying: Boolean(station),
       queue: [],
       index: 0,
-    }),
-  stopRadio: () => set({ source: null, radioUri: undefined, radioName: undefined, isPlaying: false }),
+    });
+    if (station?.uri) playSource(station.uri);
+    else pauseSource();
+  },
+  stopRadio: () => {
+    pauseSource();
+    set({ source: null, radioUri: undefined, radioName: undefined, isPlaying: false });
+  },
 }));
 
 export function currentSong(state: PlayerState): Song | undefined {
