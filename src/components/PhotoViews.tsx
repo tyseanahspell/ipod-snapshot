@@ -27,7 +27,7 @@ export function PhotoGrid({
         action: { type: 'noop' },
       }))}
       selectedIndex={selectedIndex}
-      visibleCount={10}
+      visibleCount={15}
     />
   );
 }

@@ -11,7 +11,7 @@ interface Props {
   visibleCount?: number;
 }
 
-export function MenuList({ rows, selectedIndex, large, visibleCount = 10 }: Props) {
+export function MenuList({ rows, selectedIndex, large, visibleCount = 15 }: Props) {
   const count = Math.max(1, visibleCount);
   let start = 0;
   if (rows.length > count) {

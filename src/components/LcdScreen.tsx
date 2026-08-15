@@ -94,7 +94,7 @@ export function LcdScreen({ battery, charging }: { battery: number; charging?: b
   const pKind = previewKind(screen.menuId, selected?.label);
   const images = artworkForPreview(pKind, library, screen.context);
   const showPreview = settings.previewPanel && screen.kind === 'menu' && screen.menuId === 'main';
-  const visibleCount = 10;
+  const visibleCount = 15;
   const gb = ((library.bytes ?? 0) / (1024 * 1024 * 1024)).toFixed(1);
 
   let body = null;
