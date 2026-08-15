@@ -164,8 +164,9 @@ export function ClickWheel({
 const styles = StyleSheet.create({
   wrap: {
     aspectRatio: 1,
-    width: '100%',
-    maxWidth: 280,
+    width: '70%',
+    maxWidth: 196,
+    maxHeight: '100%',
     alignSelf: 'center',
   },
   wheel: {
@@ -200,10 +201,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     fontWeight: '700',
     letterSpacing: 1.2,
-    fontSize: 13,
+    fontSize: 11,
   },
-  menu: { top: '9%' },
-  play: { bottom: '9%', fontSize: 14, letterSpacing: 0 },
-  prev: { left: '8%', fontSize: 15 },
-  next: { right: '8%', fontSize: 15 },
+  menu: { top: '8%' },
+  play: { bottom: '8%', fontSize: 12, letterSpacing: 0 },
+  prev: { left: '7%', fontSize: 13 },
+  next: { right: '7%', fontSize: 13 },
 });
