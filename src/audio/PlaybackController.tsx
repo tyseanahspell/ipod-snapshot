@@ -7,7 +7,7 @@ import {
 } from 'expo-audio';
 import { currentSong, usePlayer } from '../store/playerStore';
 import { useSettings } from '../store/settingsStore';
-import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
+import { activateKeepAwakeAsync, deactivateKeepAwake, isAvailableAsync } from 'expo-keep-awake';
 
 let shared: AudioPlayer | null = null;
 
@@ -82,12 +82,27 @@ export function PlaybackController() {
     player.volume = Math.min(limit, volume);
     if (isPlaying) {
       player.play();
-      void activateKeepAwakeAsync('nano-playback');
     } else {
       player.pause();
-      void deactivateKeepAwake('nano-playback');
     }
   }, [player, song?.uri, song?.title, song?.artist, song?.album, song?.artworkUri, isPlaying, volume, limit, source, radioUri, repeat]);
+
+  useEffect(() => {
+    if (!isPlaying) return undefined;
+    let cancelled = false;
+    void (async () => {
+      try {
+        if (!(await isAvailableAsync()) || cancelled) return;
+        await activateKeepAwakeAsync('nano-playback');
+      } catch {
+        /* Screen Wake Lock is optional on web. */
+      }
+    })();
+    return () => {
+      cancelled = true;
+      void deactivateKeepAwake('nano-playback').catch(() => {});
+    };
+  }, [isPlaying]);
 
   useEffect(() => {
     player.loop = repeat === 'one' && source === 'library';
