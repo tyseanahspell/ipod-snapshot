@@ -1,7 +1,7 @@
+import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
 import type { Song } from '../types';
 import { SCREEN } from '../theme';
-import { Artwork } from './MenuList';
 import type { NowPlayingPage } from '../store/playerStore';
 
 function formatTime(seconds: number): string {
@@ -36,94 +36,100 @@ export function NowPlayingView({ song, position, duration, page, shuffle, repeat
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.top}>
-        <Artwork uri={song?.artworkUri} size={96} />
-        <View style={styles.meta}>
-          <Text numberOfLines={2} style={styles.title}>
-            {song?.title ?? 'No song'}
-          </Text>
-          <Text numberOfLines={1} style={styles.sub}>
-            {song?.artist ?? ''}
-          </Text>
-          <Text numberOfLines={1} style={styles.sub}>
-            {song?.album ?? ''}
-          </Text>
-          <View style={styles.icons}>
-            {shuffle !== 'off' ? <Text style={styles.glyph}>🔀</Text> : null}
-            {repeat !== 'off' ? <Text style={styles.glyph}>{repeat === 'one' ? '🔂' : '🔁'}</Text> : null}
-          </View>
+      <View style={styles.details}>
+        <Text numberOfLines={1} style={styles.title}>
+          {song?.title ?? 'No song'}
+        </Text>
+        <Text numberOfLines={1} style={styles.sub}>
+          {song?.artist ?? ''}
+        </Text>
+        <Text numberOfLines={1} style={styles.sub}>
+          {song?.album ?? ''}
+        </Text>
+        <View style={styles.icons}>
+          {shuffle !== 'off' ? <Text style={styles.glyph}>🔀</Text> : null}
+          {repeat !== 'off' ? <Text style={styles.glyph}>{repeat === 'one' ? '🔂' : '🔁'}</Text> : null}
         </View>
+
+        {page === 'info' ? (
+          <View style={styles.block}>
+            <View style={styles.times}>
+              <Text style={styles.time}>{formatTime(position)}</Text>
+              <Text style={styles.time}>-{formatTime(Math.max(0, dur - position))}</Text>
+            </View>
+            <View style={styles.track}>
+              <View style={[styles.fill, { width: `${pct * 100}%` }]} />
+              <View style={[styles.knob, { left: `${pct * 100}%` }]} />
+            </View>
+            <View style={styles.volRow}>
+              <Text style={styles.hint}>–</Text>
+              <View style={styles.volTrack}>
+                <View style={[styles.volFill, { width: `${volume * 100}%` }]} />
+              </View>
+              <Text style={styles.hint}>+</Text>
+            </View>
+          </View>
+        ) : null}
+
+        {page === 'scrub' ? (
+          <View style={styles.block}>
+            <Text style={styles.caption}>Scrub</Text>
+            <View style={styles.track}>
+              <View style={[styles.fill, { width: `${pct * 100}%` }]} />
+              <View style={[styles.knob, styles.scrub, { left: `${pct * 100}%` }]} />
+            </View>
+            <View style={styles.times}>
+              <Text style={styles.time}>{formatTime(position)}</Text>
+              <Text style={styles.time}>-{formatTime(Math.max(0, dur - position))}</Text>
+            </View>
+          </View>
+        ) : null}
+
+        {page === 'shuffle' ? (
+          <View style={styles.block}>
+            <Text style={styles.caption}>Shuffle</Text>
+            <Text style={styles.value}>{shuffle === 'off' ? 'Off' : shuffle === 'songs' ? 'Songs' : 'Albums'}</Text>
+          </View>
+        ) : null}
+
+        {page === 'rating' ? (
+          <View style={styles.block}>
+            <Text style={styles.caption}>Rating</Text>
+            <Stars rating={rating} />
+          </View>
+        ) : null}
+
+        {page === 'lyrics' ? (
+          <View style={styles.block}>
+            <Text style={styles.caption}>Lyrics</Text>
+            <Text numberOfLines={4} style={styles.lyrics}>
+              {song?.lyrics || 'No lyrics'}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
-      {page === 'info' ? (
-        <View style={styles.block}>
-          <View style={styles.times}>
-            <Text style={styles.time}>{formatTime(position)}</Text>
-            <Text style={styles.time}>-{formatTime(Math.max(0, dur - position))}</Text>
+      <View style={styles.art}>
+        {song?.artworkUri ? (
+          <Image source={{ uri: song.artworkUri }} style={styles.artImage} contentFit="cover" />
+        ) : (
+          <View style={styles.artPlaceholder}>
+            <Text style={styles.artNote}>♪</Text>
           </View>
-          <View style={styles.track}>
-            <View style={[styles.fill, { width: `${pct * 100}%` }]} />
-            <View style={[styles.knob, { left: `${pct * 100}%` }]} />
-          </View>
-          <View style={styles.volRow}>
-            <Text style={styles.hint}>–</Text>
-            <View style={styles.volTrack}>
-              <View style={[styles.volFill, { width: `${volume * 100}%` }]} />
-            </View>
-            <Text style={styles.hint}>+</Text>
-          </View>
-        </View>
-      ) : null}
-
-      {page === 'scrub' ? (
-        <View style={styles.block}>
-          <Text style={styles.caption}>Scrub</Text>
-          <View style={styles.track}>
-            <View style={[styles.fill, { width: `${pct * 100}%` }]} />
-            <View style={[styles.knob, styles.scrub, { left: `${pct * 100}%` }]} />
-          </View>
-          <View style={styles.times}>
-            <Text style={styles.time}>{formatTime(position)}</Text>
-            <Text style={styles.time}>-{formatTime(Math.max(0, dur - position))}</Text>
-          </View>
-        </View>
-      ) : null}
-
-      {page === 'shuffle' ? (
-        <View style={styles.block}>
-          <Text style={styles.caption}>Shuffle</Text>
-          <Text style={styles.value}>{shuffle === 'off' ? 'Off' : shuffle === 'songs' ? 'Songs' : 'Albums'}</Text>
-        </View>
-      ) : null}
-
-      {page === 'rating' ? (
-        <View style={styles.block}>
-          <Text style={styles.caption}>Rating</Text>
-          <Stars rating={rating} />
-        </View>
-      ) : null}
-
-      {page === 'lyrics' ? (
-        <View style={styles.block}>
-          <Text style={styles.caption}>Lyrics</Text>
-          <Text numberOfLines={4} style={styles.lyrics}>
-            {song?.lyrics || 'No lyrics'}
-          </Text>
-        </View>
-      ) : null}
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: SCREEN.bg, padding: 8, justifyContent: 'space-between' },
-  top: { flexDirection: 'row', gap: 8 },
-  meta: { flex: 1, justifyContent: 'center' },
+  wrap: { flex: 1, backgroundColor: SCREEN.bg },
+  details: { paddingHorizontal: 8, paddingTop: 6, paddingBottom: 6 },
   title: { color: '#fff', fontSize: 13, fontWeight: '700' },
   sub: { color: '#c8c8c8', fontSize: 11, marginTop: 2 },
-  icons: { flexDirection: 'row', gap: 6, marginTop: 6 },
+  icons: { flexDirection: 'row', gap: 6, marginTop: 4, minHeight: 14 },
   glyph: { fontSize: 11 },
-  block: { paddingBottom: 4 },
+  block: { marginTop: 6 },
   times: { flexDirection: 'row', justifyContent: 'space-between' },
   time: { color: '#fff', fontSize: 10, fontVariant: ['tabular-nums'] },
   track: {
@@ -151,4 +157,8 @@ const styles = StyleSheet.create({
   value: { color: '#fff', fontSize: 16, textAlign: 'center', fontWeight: '700' },
   stars: { color: '#ffd76a', fontSize: 16, textAlign: 'center' },
   lyrics: { color: '#ddd', fontSize: 11, textAlign: 'center' },
+  art: { flex: 1, backgroundColor: SCREEN.artworkBg, overflow: 'hidden' },
+  artImage: { width: '100%', height: '100%' },
+  artPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: SCREEN.artworkBg },
+  artNote: { color: '#8a8a8a', fontSize: 42 },
 });

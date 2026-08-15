@@ -18,6 +18,12 @@ export const SCREEN = {
   overlay: 'rgba(0,0,0,0.55)',
 };
 
+export const WHEEL = {
+  colors: ['#f7f7f7', '#ececec', '#dcdcdc'] as const,
+  edge: '#b0b0b0',
+  label: '#3a3a3a',
+};
+
 export const SELECT = {
   colors: ['#a9d8fb', '#4aa3ea', '#1a73d4', '#0d4fa8'] as const,
   locations: [0, 0.22, 0.55, 1] as const,

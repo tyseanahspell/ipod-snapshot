@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
-import { FINISHES } from '../theme';
+import { FINISHES, WHEEL } from '../theme';
 import type { NanoColor } from '../types';
 
 type Zone = 'center' | 'menu' | 'play' | 'prev' | 'next' | 'wheel';
@@ -145,12 +145,12 @@ export function ClickWheel({
 
   return (
     <View style={styles.wrap} onLayout={onLayout} {...responder.panHandlers}>
-      <LinearGradient colors={finish.wheel} style={styles.wheel}>
-        <View style={[styles.ring, { borderColor: finish.edge }]} />
-        <Text style={[styles.label, styles.menu, { color: finish.label }]}>MENU</Text>
-        <Text style={[styles.label, styles.prev, { color: finish.label }]}>{'|<<'}</Text>
-        <Text style={[styles.label, styles.next, { color: finish.label }]}>{'>>|'}</Text>
-        <Text style={[styles.label, styles.play, { color: finish.label }]}>{'▶❚❚'}</Text>
+      <LinearGradient colors={[...WHEEL.colors]} style={styles.wheel}>
+        <View style={[styles.ring, { borderColor: WHEEL.edge }]} />
+        <Text style={[styles.label, styles.menu, { color: WHEEL.label }]}>MENU</Text>
+        <Text style={[styles.label, styles.prev, { color: WHEEL.label }]}>{'|<<'}</Text>
+        <Text style={[styles.label, styles.next, { color: WHEEL.label }]}>{'>>|'}</Text>
+        <Text style={[styles.label, styles.play, { color: WHEEL.label }]}>{'▶❚❚'}</Text>
         <LinearGradient colors={finish.center} style={[styles.center, { borderColor: finish.edge }]}>
           <Svg width="100%" height="100%" viewBox="0 0 100 100">
             <Circle cx="50" cy="50" r="46" fill="none" stroke={finish.edge} strokeOpacity={0.25} strokeWidth="2" />
