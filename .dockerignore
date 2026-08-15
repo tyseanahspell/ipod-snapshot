@@ -9,6 +9,7 @@ media
 .media-root
 *.log
 .DS_Store
+.env
 .env*.local
 agent-transcripts
 .cursor

@@ -12,6 +12,7 @@ if [[ -z "$MEDIA_DIR" ]]; then
   echo
   echo "Usage:"
   echo "  ./scripts/deploy.sh /path/to/Music"
+  echo "  npm run deploy -- /path/to/Music"
   echo "  MEDIA_DIR=/path/to/Music PORT=8080 ./scripts/deploy.sh"
   exit 1
 fi
@@ -24,17 +25,24 @@ fi
 MEDIA_DIR="$(cd "$MEDIA_DIR" && pwd)"
 export MEDIA_DIR PORT
 
+# Compose interpolates volumes from a project .env file. Shell `export` is not
+# enough when `docker` is Docker Desktop's CLI.
+{
+  printf 'MEDIA_DIR="%s"\n' "${MEDIA_DIR//\"/\\\"}"
+  printf 'PORT="%s"\n' "$PORT"
+} > "$ROOT/.env"
+
 if ! command -v docker >/dev/null 2>&1; then
   echo "Docker is required. Install Docker, then retry." >&2
   exit 1
 fi
 
 echo "Building iPod nano…"
-docker compose build
+docker compose --env-file "$ROOT/.env" build
 echo "Starting at http://localhost:${PORT}"
 echo "Library: ${MEDIA_DIR}"
-docker compose up -d
-docker compose ps
+docker compose --env-file "$ROOT/.env" up -d
+docker compose --env-file "$ROOT/.env" ps
 echo
 echo "Open http://localhost:${PORT}"
 echo "Stop with: docker compose down"

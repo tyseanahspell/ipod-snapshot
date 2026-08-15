@@ -20,7 +20,13 @@ Opens the iPod in the browser and starts a media server on port **3847**. After 
 ./scripts/deploy.sh /path/to/Music
 ```
 
-That builds the web app, serves it at **http://localhost:8080**, and streams the folder you passed in. Change the port with `PORT=9090 ./scripts/deploy.sh /path/to/Music`.
+or:
+
+```bash
+npm run deploy -- /path/to/Music
+```
+
+That builds the web app, serves it at **http://localhost:8080**, and streams the folder you passed in. Change the port with `PORT=9090 ./scripts/deploy.sh /path/to/Music`. The script writes `.env` so Docker Compose can mount that folder.
 
 Stop it with `docker compose down`.
 
