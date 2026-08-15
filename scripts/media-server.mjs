@@ -19,9 +19,10 @@ import { homedir, tmpdir } from 'node:os';
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 
-const PORT = Number(process.env.MEDIA_PORT || 3847);
+const PORT = Number(process.env.PORT || process.env.MEDIA_PORT || 3847);
 const ROOT_FILE = join(fileURLToPath(new URL('..', import.meta.url)), '.media-root');
 const ART_DIR = join(tmpdir(), 'ipod-snapshot-art');
+const STATIC_DIR = process.env.STATIC_DIR ? resolve(process.env.STATIC_DIR) : '';
 
 const AUDIO_EXT = new Set(['.mp3', '.m4a', '.aac', '.wav', '.aiff', '.aif', '.flac', '.ogg', '.oga', '.wma', '.alac', '.m4b', '.mp2', '.opus', '.caf']);
 const VIDEO_EXT = new Set(['.mp4', '.m4v', '.mov', '.avi', '.mkv', '.3gp', '.webm', '.mpg', '.mpeg', '.wmv']);
@@ -49,6 +50,16 @@ const MIME = {
   '.gif': 'image/gif',
   '.webp': 'image/webp',
   '.txt': 'text/plain',
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.wasm': 'application/wasm',
+  '.map': 'application/json',
 };
 
 let rootDir = '';
@@ -464,8 +475,9 @@ function sendFile(req, res, filePath) {
 }
 
 async function handlePick() {
+  if (rootDir) return setRoot(rootDir);
   const chosen = await pickFolderDialog({ silent: true });
-  if (!chosen) throw new Error('No folder selected');
+  if (!chosen) throw new Error('No folder selected. Mount a library with MEDIA_ROOT or choose This Computer in the browser.');
   return setRoot(chosen);
 }
 
@@ -532,7 +544,31 @@ function handler(req, res) {
     return;
   }
 
+  if (serveStatic(req, res, url)) return;
+
   sendJson(res, 404, { error: 'Not found' });
+}
+
+function serveStatic(req, res, url) {
+  if (!STATIC_DIR) return false;
+  let rel = decodeURIComponent(url.pathname);
+  if (rel === '/') rel = '/index.html';
+  const full = resolve(STATIC_DIR, `.${rel}`);
+  if (!full.startsWith(STATIC_DIR)) {
+    res.writeHead(403, { 'Access-Control-Allow-Origin': '*' });
+    res.end('Forbidden');
+    return true;
+  }
+  if (existsSync(full) && statSync(full).isFile()) {
+    sendFile(req, res, full);
+    return true;
+  }
+  const index = join(STATIC_DIR, 'index.html');
+  if (existsSync(index) && !rel.split('/').pop()?.includes('.')) {
+    sendFile(req, res, index);
+    return true;
+  }
+  return false;
 }
 
 async function main() {
@@ -543,7 +579,7 @@ async function main() {
   const initial = pathArg || fromEnv || loadSavedRoot();
 
   if (wantPick || !initial) {
-    if (wantPick || process.stdin.isTTY) {
+    if (!STATIC_DIR && (wantPick || process.stdin.isTTY)) {
       try {
         const chosen = await pickFolderDialog();
         if (chosen) setRoot(chosen);
@@ -569,17 +605,10 @@ async function main() {
     throw err;
   });
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Computer library server: http://0.0.0.0:${PORT}`);
+    if (STATIC_DIR) console.log(`iPod nano web: http://0.0.0.0:${PORT}`);
+    else console.log(`Computer library server: http://0.0.0.0:${PORT}`);
     if (rootDir) console.log(`Serving ${rootDir} (${catalog?.songs.length ?? 0} songs, ${catalog?.videos.length ?? 0} videos)`);
-    else console.log('No folder yet. Choose Computer Folder on the iPod, or: npm run media -- /path/to/folder');
-    try {
-      const proc = readFileSync('/proc/version', 'utf8');
-      if (/microsoft/i.test(proc)) {
-        console.log('WSL2: set EXPO_PUBLIC_MEDIA_HOST to your Windows LAN IP if the phone cannot connect.');
-      }
-    } catch {
-      /* not Linux */
-    }
+    else if (!STATIC_DIR) console.log('No folder yet. Choose Computer Folder on the iPod, or: npm run media -- /path/to/folder');
   });
 }
 

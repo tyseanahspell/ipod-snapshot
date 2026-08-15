@@ -451,6 +451,7 @@ export async function loadLibraryCache(): Promise<Library | null> {
     const parsed = JSON.parse(await file.text()) as Library;
     if (!parsed || !Array.isArray(parsed.songs)) return null;
     if (parsed.rootUri?.startsWith('computer://')) return localizeLibrary(parsed);
+    if (parsed.rootUri?.startsWith('browser://')) return null;
     return parsed;
   } catch {
     return null;
@@ -470,7 +471,7 @@ export async function fetchComputerLibrary(pick: boolean, onProgress?: (p: ScanP
   try {
     res = await fetch(url, { method: pick ? 'POST' : 'GET' });
   } catch {
-    throw new Error('Cannot reach the computer. Run npm start on the same Wi-Fi, then try again.');
+    throw new Error('Cannot reach the media library. Run npm start, or deploy with Docker.');
   }
   const body = (await res.json().catch(() => ({}))) as Library & { error?: string };
   if (!res.ok) {
@@ -481,4 +482,154 @@ export async function fetchComputerLibrary(pick: boolean, onProgress?: (p: ScanP
   }
   onProgress?.({ phase: 'done', files: body.songs.length, tagged: body.songs.length, message: 'Done' });
   return localizeLibrary(body);
+}
+
+export async function fetchComputerStatus(): Promise<{ ok: boolean; root: string | null; name: string | null }> {
+  const base = computerBaseUrl();
+  const res = await fetch(`${base}/status`);
+  if (!res.ok) throw new Error('Computer library is not running');
+  return (await res.json()) as { ok: boolean; root: string | null; name: string | null };
+}
+
+type BrowserFile = globalThis.File;
+
+function relativePath(file: BrowserFile): string {
+  return (file as BrowserFile & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+}
+
+function pickBrowserFileList(): Promise<BrowserFile[]> {
+  return new Promise((resolve, reject) => {
+    if (typeof document === 'undefined') {
+      reject(new Error('Folder picker is only available in the browser'));
+      return;
+    }
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.setAttribute('webkitdirectory', '');
+    input.setAttribute('directory', '');
+    const finish = (files: BrowserFile[], cancelled: boolean) => {
+      input.remove();
+      if (cancelled) reject(new Error('cancelled'));
+      else resolve(files);
+    };
+    input.addEventListener('change', () => finish(Array.from(input.files ?? []), false));
+    input.addEventListener('cancel', () => finish([], true));
+    input.click();
+  });
+}
+
+export async function pickAndScanBrowser(onProgress?: (p: ScanProgress) => void): Promise<Library> {
+  const files = await pickBrowserFileList();
+  if (files.length === 0) throw new Error('cancelled');
+  return scanBrowserFiles(files, onProgress);
+}
+
+export async function scanBrowserFiles(files: BrowserFile[], onProgress?: (p: ScanProgress) => void): Promise<Library> {
+  onProgress?.({ phase: 'listing', files: files.length, tagged: 0, message: 'Reading folder…' });
+  const covers = new Map<string, string>();
+  for (const file of files) {
+    const rel = relativePath(file);
+    const parent = rel.split('/').slice(0, -1).join('/');
+    const ext = extOf(file.name);
+    if (IMAGE_EXT.has(ext) && COVER_NAMES.has(file.name.toLowerCase()) && !covers.has(parent)) {
+      covers.set(parent, URL.createObjectURL(file));
+    }
+  }
+  for (const file of files) {
+    const rel = relativePath(file);
+    const parent = rel.split('/').slice(0, -1).join('/');
+    const ext = extOf(file.name);
+    if (IMAGE_EXT.has(ext) && !covers.has(parent)) covers.set(parent, URL.createObjectURL(file));
+  }
+
+  const songs: Song[] = [];
+  const videos: VideoItem[] = [];
+  const photos: PhotoItem[] = [];
+  const notes: NoteItem[] = [];
+  let bytes = 0;
+  let tagged = 0;
+  const top = files.length ? relativePath(files[0]).split('/')[0] || 'Library' : 'Library';
+
+  for (const file of files) {
+    bytes += file.size;
+    const rel = relativePath(file);
+    const parts = rel.split('/');
+    const folder = parts[parts.length - 2] || top;
+    const parent = parts.slice(0, -1).join('/');
+    const ext = extOf(file.name);
+    const id = hashId(rel);
+    const parsed = parseFilename(file.name);
+    tagged += 1;
+    if (tagged % 25 === 0) {
+      onProgress?.({ phase: 'tagging', files: files.length, tagged, message: `Reading ${file.name}` });
+    }
+    if (AUDIO_EXT.has(ext)) {
+      let tags: ReturnType<typeof parseId3> = {};
+      try {
+        tags = parseId3(new Uint8Array(await file.slice(0, ID3_BYTES).arrayBuffer()));
+      } catch {
+        tags = {};
+      }
+      let artworkUri = covers.get(parent);
+      if (tags.artwork?.bytes && tags.artwork.bytes.length > 40) {
+        const mime = tags.artwork.mime || 'image/jpeg';
+        const bytes = tags.artwork.bytes;
+        const copy = new Uint8Array(bytes.byteLength);
+        copy.set(bytes);
+        artworkUri = URL.createObjectURL(new Blob([copy.buffer as ArrayBuffer], { type: mime }));
+      }
+      const albumGuess = parts.length > 1 ? parts[parts.length - 2] : folder;
+      const artistGuess = parts.length > 2 ? parts[parts.length - 3] : 'Unknown Artist';
+      songs.push({
+        id,
+        uri: URL.createObjectURL(file),
+        title: tags.title || parsed.title || file.name,
+        artist: tags.artist || artistGuess || 'Unknown Artist',
+        album: tags.album || albumGuess || 'Unknown Album',
+        albumArtist: tags.albumArtist || tags.artist || artistGuess || 'Unknown Artist',
+        genre: tags.genre || 'Unknown',
+        composer: tags.composer || '',
+        year: tags.year,
+        trackNumber: tags.trackNumber || parsed.trackNumber,
+        kind: classifyAudio(rel, ext),
+        playCount: 0,
+        rating: 0,
+        folder,
+        artworkUri,
+      });
+    } else if (VIDEO_EXT.has(ext)) {
+      const tv = rel.match(/s(\d{1,2})e(\d{1,2})/i);
+      videos.push({
+        id,
+        uri: URL.createObjectURL(file),
+        title: parsed.title || file.name,
+        kind: classifyVideo(rel, folder),
+        show: tv ? folder : undefined,
+        season: tv ? parseInt(tv[1], 10) : undefined,
+        episode: tv ? parseInt(tv[2], 10) : undefined,
+        artworkUri: covers.get(parent),
+        folder,
+      });
+    } else if (IMAGE_EXT.has(ext) && !COVER_NAMES.has(file.name.toLowerCase())) {
+      photos.push({ id, uri: URL.createObjectURL(file), album: folder || 'Photo Library', folder });
+    } else if (ext === '.txt') {
+      notes.push({ id, title: parsed.title, body: await file.text() });
+    }
+  }
+
+  songs.sort((a, b) => a.title.localeCompare(b.title) || a.artist.localeCompare(b.artist));
+  videos.sort((a, b) => a.title.localeCompare(b.title));
+  photos.sort((a, b) => a.album.localeCompare(b.album) || a.uri.localeCompare(b.uri));
+  onProgress?.({ phase: 'done', files: files.length, tagged, message: 'Done' });
+  return {
+    songs,
+    videos,
+    photos,
+    notes,
+    scannedAt: Date.now(),
+    rootUri: `browser://${top}`,
+    rootName: top,
+    bytes,
+  };
 }

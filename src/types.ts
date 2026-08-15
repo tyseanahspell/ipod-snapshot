@@ -122,6 +122,7 @@ export type MenuAction =
   | { type: 'setSetting'; key: string; value: string | number | boolean }
   | { type: 'pickFolder' }
   | { type: 'pickComputerFolder' }
+  | { type: 'pickBrowserFolder' }
   | { type: 'scanMediaLibrary' }
   | { type: 'rescan' }
   | { type: 'resetSettings' }

@@ -149,6 +149,9 @@ export function runAction(action: MenuAction): void {
     case 'pickComputerFolder':
       void useLibrary.getState().pickComputerFolder();
       break;
+    case 'pickBrowserFolder':
+      void useLibrary.getState().pickBrowserFolder();
+      break;
     case 'scanMediaLibrary':
       void useLibrary.getState().scanDevice();
       break;

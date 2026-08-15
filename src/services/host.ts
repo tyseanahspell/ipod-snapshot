@@ -32,7 +32,10 @@ export function computerBaseUrl(): string {
   const override = overrideBase();
   if (override) return override;
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    return `${window.location.protocol}//${window.location.hostname}:${MEDIA_PORT}`;
+    const port = window.location.port;
+    const expoDev = port === '8081' || port === '8082' || port === '19000' || port === '19006';
+    if (expoDev) return `${window.location.protocol}//${window.location.hostname}:${MEDIA_PORT}`;
+    return '';
   }
   const host = hostFromExpo();
   if (host && host !== 'localhost' && host !== '127.0.0.1') {

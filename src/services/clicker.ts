@@ -1,4 +1,5 @@
 import { File, Paths } from 'expo-file-system';
+import { Platform } from 'react-native';
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 import type { ClickerMode } from '../types';
 import { usePlayer } from '../store/playerStore';
@@ -39,6 +40,11 @@ function pcmClick(): Uint8Array {
 
 async function ensureClick(): Promise<string | null> {
   if (clickUri) return clickUri;
+  if (Platform.OS === 'web') {
+    const blob = new Blob([pcmClick().buffer as ArrayBuffer], { type: 'audio/wav' });
+    clickUri = URL.createObjectURL(blob);
+    return clickUri;
+  }
   try {
     const file = new File(Paths.cache, 'nano-click.wav');
     if (!file.exists) {

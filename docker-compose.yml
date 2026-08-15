@@ -1,0 +1,13 @@
+services:
+  ipod:
+    build: .
+    image: ipod-nano:latest
+    ports:
+      - "${PORT:-8080}:80"
+    volumes:
+      - ${MEDIA_DIR:?Set MEDIA_DIR to your music folder}:/media:ro
+    environment:
+      PORT: "80"
+      STATIC_DIR: /app/dist
+      MEDIA_ROOT: /media
+    restart: unless-stopped

@@ -2,6 +2,7 @@ import type { Library, MenuAction, MenuContext, MenuRow, PhotoItem, Song, VideoI
 import { albumsOf, photoAlbums, songsByArtist, songsByComposer, songsByGenre, tvShows, videosOfKind } from '../store/libraryStore';
 import { BACKLIGHT_OPTIONS, EQ_PRESETS, type SettingsState } from '../store/settingsStore';
 import { FINISHES } from '../theme';
+import { Platform } from 'react-native';
 
 function row(id: string, label: string, action: MenuAction, extra?: Partial<MenuRow>): MenuRow {
   return { id, label, action, chevron: action.type === 'pushMenu', ...extra };
@@ -281,20 +282,28 @@ export function buildMenu(
           chevron: false,
           value: cap(settings.clicker),
         }),
-        row('rotate', 'Rotate', { type: 'toggleSetting', key: 'coverFlowRotate' }, {
-          chevron: false,
-          value: settings.coverFlowRotate ? 'Cover Flow' : 'Off',
-        }),
+        ...(Platform.OS === 'web'
+          ? []
+          : [
+              row('rotate', 'Rotate', { type: 'toggleSetting', key: 'coverFlowRotate' }, {
+                chevron: false,
+                value: settings.coverFlowRotate ? 'Cover Flow' : 'Off',
+              }),
+            ]),
         row('finish', 'Finish', { type: 'pushMenu', title: 'Finish', menuId: 'finish' }, {
           value: FINISHES[settings.color].name,
         }),
       ];
     case 'playback':
       return [
-        row('shake', 'Shake', { type: 'toggleSetting', key: 'shakeToShuffle' }, {
-          chevron: false,
-          value: settings.shakeToShuffle ? 'Shuffle' : 'Off',
-        }),
+        ...(Platform.OS === 'web'
+          ? []
+          : [
+              row('shake', 'Shake', { type: 'toggleSetting', key: 'shakeToShuffle' }, {
+                chevron: false,
+                value: settings.shakeToShuffle ? 'Shuffle' : 'Off',
+              }),
+            ]),
         row('shuffle', 'Shuffle', { type: 'cycleSetting', key: 'shuffle' }, {
           chevron: false,
           value: cap(settings.shuffle),
@@ -317,8 +326,20 @@ export function buildMenu(
       );
     case 'library': {
       const computer = library.rootUri?.startsWith('computer://');
+      const browser = library.rootUri?.startsWith('browser://');
       const device = library.rootUri?.startsWith('media-library://');
-      const phone = Boolean(library.rootUri) && !computer && !device;
+      const phone = Boolean(library.rootUri) && !computer && !browser && !device;
+      if (Platform.OS === 'web') {
+        return [
+          row('computer', 'Server Folder', { type: 'pickComputerFolder' }, {
+            value: computer ? library.rootName : undefined,
+          }),
+          row('browser', 'This Computer', { type: 'pickBrowserFolder' }, {
+            value: browser ? library.rootName : undefined,
+          }),
+          row('rescan', 'Update Library', { type: 'rescan' }),
+        ];
+      }
       return [
         row('computer', 'Computer Folder', { type: 'pickComputerFolder' }, {
           value: computer ? library.rootName : undefined,

@@ -1,0 +1,15 @@
+node_modules
+.git
+.expo
+dist
+web-build
+android
+ios
+media
+.media-root
+*.log
+.DS_Store
+.env*.local
+agent-transcripts
+.cursor
+.claude

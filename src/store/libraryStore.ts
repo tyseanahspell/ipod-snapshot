@@ -1,10 +1,13 @@
 import { create } from 'zustand';
 import { Directory } from 'expo-file-system';
+import { Platform } from 'react-native';
 import { EMPTY_LIBRARY, type Library, type PhotoItem, type Song, type VideoItem } from '../types';
 import {
   fetchComputerLibrary,
+  fetchComputerStatus,
   loadLibraryCache,
   pickAndScan,
+  pickAndScanBrowser,
   saveLibraryCache,
   scanDirectory,
   scanMediaLibrary,
@@ -19,6 +22,7 @@ export interface LibraryState {
   hydrate: () => Promise<void>;
   pickFolder: () => Promise<void>;
   pickComputerFolder: () => Promise<void>;
+  pickBrowserFolder: () => Promise<void>;
   scanDevice: () => Promise<void>;
   rescan: () => Promise<void>;
 }
@@ -109,7 +113,9 @@ async function runScan(fn: () => Promise<Library>, set: (p: Partial<LibraryState
   set({ loading: true, error: undefined, progress: { phase: 'listing', files: 0, tagged: 0, message: 'Starting…' } });
   try {
     const library = await fn();
-    await saveLibraryCache(library);
+    if (!library.rootUri?.startsWith('browser://')) {
+      await saveLibraryCache(library);
+    }
     set({ library, loading: false, progress: undefined });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Scan failed';
@@ -126,9 +132,24 @@ export const useLibrary = create<LibraryState>((set, get) => ({
   loading: false,
   hydrate: async () => {
     const cached = await loadLibraryCache();
-    if (cached) set({ library: cached });
+    if (cached && !cached.rootUri?.startsWith('browser://')) set({ library: cached });
+    try {
+      const status = await fetchComputerStatus();
+      if (status.root) {
+        await runScan(
+          () => fetchComputerLibrary(false, (progress) => set({ progress })),
+          set,
+        );
+      }
+    } catch {
+      /* media server optional */
+    }
   },
   pickFolder: async () => {
+    if (Platform.OS === 'web') {
+      await get().pickBrowserFolder();
+      return;
+    }
     await runScan(
       () =>
         pickAndScan((progress) => set({ progress })),
@@ -138,6 +159,12 @@ export const useLibrary = create<LibraryState>((set, get) => ({
   pickComputerFolder: async () => {
     await runScan(
       () => fetchComputerLibrary(true, (progress) => set({ progress })),
+      set,
+    );
+  },
+  pickBrowserFolder: async () => {
+    await runScan(
+      () => pickAndScanBrowser((progress) => set({ progress })),
       set,
     );
   },
@@ -158,6 +185,10 @@ export const useLibrary = create<LibraryState>((set, get) => ({
         () => fetchComputerLibrary(false, (progress) => set({ progress })),
         set,
       );
+      return;
+    }
+    if (uri.startsWith('browser://')) {
+      await get().pickBrowserFolder();
       return;
     }
     if (uri.startsWith('media-library://')) {

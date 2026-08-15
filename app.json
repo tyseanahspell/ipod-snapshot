@@ -46,7 +46,10 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "output": "single",
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png",
+      "name": "iPod nano"
     },
     "plugins": [
       [

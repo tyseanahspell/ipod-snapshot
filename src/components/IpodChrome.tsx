@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FINISHES } from '../theme';
 import type { NanoColor } from '../types';
@@ -58,6 +58,9 @@ export function IpodChrome(props: Props) {
 
         <View style={styles.bottom}>
           <View style={styles.dock} />
+          {Platform.OS === 'web' ? (
+            <Text style={styles.hint}>Arrows / J K to scroll · Enter to select · Esc for MENU · Space to play</Text>
+          ) : null}
         </View>
       </LinearGradient>
     </View>
@@ -72,6 +75,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     paddingHorizontal: 18,
+    minHeight: Platform.OS === 'web' ? ('100vh' as unknown as number) : undefined,
   },
   body: {
     width: '100%',
@@ -148,5 +152,12 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: '#111',
     opacity: 0.45,
+  },
+  hint: {
+    marginTop: 10,
+    color: '#888',
+    fontSize: 10,
+    textAlign: 'center',
+    maxWidth: 280,
   },
 });

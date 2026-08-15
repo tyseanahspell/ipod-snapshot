@@ -32,6 +32,7 @@ export default function App() {
   const shuffle = useSettings((s) => s.shuffle);
   const repeat = useSettings((s) => s.repeat);
   const hydrate = useLibrary((s) => s.hydrate);
+  const loading = useLibrary((s) => s.loading);
   const bootDone = useNav((s) => s.bootDone);
   const battery = useBattery();
 
@@ -56,14 +57,15 @@ export default function App() {
   }, [shuffle, repeat]);
 
   useEffect(() => {
-    if (!bootDone) return;
+    if (!bootDone || loading) return;
     const library = useLibrary.getState().library;
     if (library.songs.length + library.videos.length + library.photos.length === 0) {
       useNav.getState().push({ title: 'Library', kind: 'menu', menuId: 'library' });
     }
-  }, [bootDone]);
+  }, [bootDone, loading]);
 
   useEffect(() => {
+    if (Platform.OS === 'web') return;
     let last = 0;
     const sub = Accelerometer.addListener(({ x, y, z }) => {
       const mag = Math.sqrt(x * x + y * y + z * z);
@@ -84,6 +86,35 @@ export default function App() {
     Accelerometer.setUpdateInterval(180);
     return () => sub.remove();
   }, [coverFlowRotate]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const onKey = (event: KeyboardEvent) => {
+      const tag = (event.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (useSettings.getState().hold && event.key !== 'h') return;
+      const run: Record<string, () => void> = {
+        ArrowDown: () => onWheelTick(1),
+        ArrowUp: () => onWheelTick(-1),
+        j: () => onWheelTick(1),
+        k: () => onWheelTick(-1),
+        Enter: onSelect,
+        Escape: onMenu,
+        Backspace: onMenu,
+        ' ': onPlayPause,
+        ArrowLeft: () => onSkip(-1),
+        ArrowRight: () => onSkip(1),
+        m: onMenu,
+        h: () => useSettings.getState().toggle('hold'),
+      };
+      const action = run[event.key];
+      if (!action) return;
+      event.preventDefault();
+      action();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <GestureHandlerRootView style={styles.fill}>
@@ -119,6 +150,22 @@ function useBattery() {
     const apply = (patch: Partial<{ level: number; charging: boolean }>) => {
       if (mounted) setState((s) => ({ ...s, ...patch }));
     };
+    if (Platform.OS === 'web') {
+      const nav = navigator as Navigator & {
+        getBattery?: () => Promise<{
+          level: number;
+          charging: boolean;
+          addEventListener: (name: string, fn: () => void) => void;
+        }>;
+      };
+      if (!nav.getBattery) return;
+      void nav.getBattery().then((battery) => {
+        apply({ level: battery.level, charging: battery.charging });
+        battery.addEventListener('levelchange', () => apply({ level: battery.level }));
+        battery.addEventListener('chargingchange', () => apply({ charging: battery.charging }));
+      });
+      return;
+    }
     void Battery.getBatteryLevelAsync().then((level) => apply({ level }));
     void Battery.getBatteryStateAsync().then((batteryState) =>
       apply({
