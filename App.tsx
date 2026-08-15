@@ -19,6 +19,7 @@ import {
   onSkip,
   onWheelTick,
 } from './src/navigation/controller';
+import { createDoubleTap } from './src/navigation/doubleTap';
 import { useLibrary } from './src/store/libraryStore';
 import { useNav } from './src/store/navStore';
 import { usePlayer } from './src/store/playerStore';
@@ -89,6 +90,7 @@ export default function App() {
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const taps = createDoubleTap();
     const onKey = (event: KeyboardEvent) => {
       const tag = (event.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
@@ -98,13 +100,13 @@ export default function App() {
         ArrowUp: () => onWheelTick(-1),
         j: () => onWheelTick(1),
         k: () => onWheelTick(-1),
-        Enter: onSelect,
-        Escape: onMenu,
-        Backspace: onMenu,
+        Enter: () => taps.tap('center', onSelect, onCenterHold),
+        Escape: () => taps.tap('menu', onMenu, onMenuHold),
+        Backspace: () => taps.tap('menu', onMenu, onMenuHold),
         ' ': onPlayPause,
         ArrowLeft: () => onSkip(-1),
         ArrowRight: () => onSkip(1),
-        m: onMenu,
+        m: () => taps.tap('menu', onMenu, onMenuHold),
         h: () => useSettings.getState().toggle('hold'),
       };
       const action = run[event.key];
@@ -113,7 +115,10 @@ export default function App() {
       action();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      taps.cancel();
+      window.removeEventListener('keydown', onKey);
+    };
   }, []);
 
   return (

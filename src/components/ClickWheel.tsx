@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import {
   PanResponder,
   StyleSheet,
@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
 import { FINISHES, WHEEL } from '../theme';
 import type { NanoColor } from '../types';
+import { createDoubleTap } from '../navigation/doubleTap';
 
 type Zone = 'center' | 'menu' | 'play' | 'prev' | 'next' | 'wheel';
 
@@ -61,15 +62,12 @@ export function ClickWheel({
   const lastAngle = useRef<number | null>(null);
   const acc = useRef(0);
   const start = useRef({ x: 0, y: 0, t: 0, zone: 'wheel' as Zone });
-  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const moved = useRef(false);
+  const taps = useRef(createDoubleTap());
 
-  const clearHold = () => {
-    if (holdTimer.current) {
-      clearTimeout(holdTimer.current);
-      holdTimer.current = null;
-    }
-  };
+  useEffect(() => {
+    if (disabled) taps.current.cancel();
+  }, [disabled]);
 
   const responder = useMemo(
     () =>
@@ -84,12 +82,6 @@ export function ClickWheel({
           moved.current = false;
           lastAngle.current = Math.atan2(locationY - size / 2, locationX - size / 2);
           acc.current = 0;
-          clearHold();
-          if (zone === 'menu') {
-            holdTimer.current = setTimeout(onMenuHold, 900);
-          } else if (zone === 'center') {
-            holdTimer.current = setTimeout(onCenterHold, 700);
-          }
         },
         onPanResponderMove: (e) => {
           if (disabled) return;
@@ -99,7 +91,6 @@ export function ClickWheel({
           const dy = locationY - start.current.y;
           if (dx * dx + dy * dy > 36) {
             moved.current = true;
-            clearHold();
           }
           const angle = Math.atan2(locationY - size / 2, locationX - size / 2);
           if (lastAngle.current == null) {
@@ -121,18 +112,16 @@ export function ClickWheel({
           }
         },
         onPanResponderRelease: () => {
-          clearHold();
           lastAngle.current = null;
           if (moved.current || disabled) return;
           const { zone } = start.current;
-          if (zone === 'center') onSelect();
-          else if (zone === 'menu') onMenu();
+          if (zone === 'center') taps.current.tap('center', onSelect, onCenterHold);
+          else if (zone === 'menu') taps.current.tap('menu', onMenu, onMenuHold);
           else if (zone === 'play') onPlayPause();
           else if (zone === 'prev') onSkip(-1);
           else if (zone === 'next') onSkip(1);
         },
         onPanResponderTerminate: () => {
-          clearHold();
           lastAngle.current = null;
         },
       }),

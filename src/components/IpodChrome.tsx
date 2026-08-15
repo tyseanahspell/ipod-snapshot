@@ -59,7 +59,7 @@ export function IpodChrome(props: Props) {
         <View style={styles.bottom}>
           <View style={styles.dock} />
           {Platform.OS === 'web' ? (
-            <Text style={styles.hint}>Arrows / J K to scroll · Enter to select · Esc for MENU · Space to play</Text>
+            <Text style={styles.hint}>Arrows / J K to scroll · Enter to select · Esc for MENU · double-click center / MENU · Space to play</Text>
           ) : null}
         </View>
       </LinearGradient>

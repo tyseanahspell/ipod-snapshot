@@ -51,9 +51,9 @@ Main menu:
 | Drag around the wheel | Scroll / change volume on Now Playing / tune radio |
 | Arrow keys or J / K | Scroll |
 | Center button or Enter | Select. On Now Playing, cycle scrubber, shuffle, rating, lyrics |
-| Hold center | Start Genius, add to On-The-Go, browse album |
+| Double-click center or Enter | Start Genius, add to On-The-Go, browse album |
 | MENU or Esc | Previous screen |
-| Hold MENU | Main menu |
+| Double-click MENU or Esc | Main menu |
 | ▶❚❚ or Space | Play / pause |
 | ← → | Previous / next track (or station / photo) |
 | HOLD switch or H | Disable the Click Wheel |
