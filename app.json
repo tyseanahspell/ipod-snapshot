@@ -1,0 +1,82 @@
+{
+  "expo": {
+    "name": "iPod nano",
+    "slug": "ipod-snapshot",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "ipodnano",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ipodsnapshot.nano",
+      "infoPlist": {
+        "UIBackgroundModes": ["audio"],
+        "NSAppleMusicUsageDescription": "iPod nano needs access to your music library so songs can appear in Music.",
+        "NSPhotoLibraryUsageDescription": "iPod nano needs access to photos and videos so they can appear in Photos and Videos.",
+        "NSMicrophoneUsageDescription": "iPod nano records voice memos with the microphone.",
+        "NSMotionUsageDescription": "iPod nano uses motion for shake-to-shuffle and Cover Flow."
+      }
+    },
+    "android": {
+      "package": "com.ipodsnapshot.nano",
+      "adaptiveIcon": {
+        "backgroundColor": "#111111",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "READ_MEDIA_AUDIO",
+        "READ_MEDIA_VIDEO",
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "iPod nano records voice memos with the microphone.",
+          "enableBackgroundPlayback": true
+        }
+      ],
+      "expo-video",
+      "expo-image",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#000000",
+          "image": "./assets/splash-icon.png"
+        }
+      ],
+      "expo-font",
+      "expo-asset",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "iPod nano needs photos and videos to fill Photos and Videos.",
+          "granularPermissions": ["photo", "video", "audio"]
+        }
+      ],
+      [
+        "expo-file-system",
+        {
+          "supportsOpeningDocumentsInPlace": true
+        }
+      ]
+    ]
+  }
+}
