@@ -10,10 +10,7 @@
     "media": "node scripts/media-server.mjs",
     "web": "node scripts/dev.mjs --web",
     "export:web": "expo export --platform web",
-    "deploy": "bash scripts/deploy.sh",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
-    "prebuild": "expo prebuild"
+    "deploy": "bash scripts/deploy.sh"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
