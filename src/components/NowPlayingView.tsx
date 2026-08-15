@@ -38,10 +38,10 @@ export function NowPlayingView({ song, position, duration, page, shuffle, repeat
     <View style={styles.wrap}>
       <View style={styles.details}>
         <Text numberOfLines={1} style={styles.title}>
-          {song?.title ?? 'No song'}
-        </Text>
-        <Text numberOfLines={1} style={styles.sub}>
           {song?.artist ?? ''}
+        </Text>
+        <Text numberOfLines={1} style={styles.title}>
+          {song?.title ?? 'No song'}
         </Text>
         <Text numberOfLines={1} style={styles.sub}>
           {song?.album ?? ''}
@@ -50,15 +50,6 @@ export function NowPlayingView({ song, position, duration, page, shuffle, repeat
           {shuffle !== 'off' ? <Text style={styles.glyph}>🔀</Text> : null}
           {repeat !== 'off' ? <Text style={styles.glyph}>{repeat === 'one' ? '🔂' : '🔁'}</Text> : null}
         </View>
-        <View style={styles.art}>
-        {song?.artworkUri ? (
-          <Image source={{ uri: song.artworkUri }} style={styles.artImage} contentFit="contain" />
-        ) : (
-          <View style={styles.artPlaceholder}>
-            <Text style={styles.artNote}>♪</Text>
-          </View>
-        )}
-      </View>
 
         {page === 'info' ? (
           <View style={styles.block}>
@@ -117,6 +108,16 @@ export function NowPlayingView({ song, position, duration, page, shuffle, repeat
           </View>
         ) : null}
       </View>
+
+      <View style={styles.art}>
+        {song?.artworkUri ? (
+          <Image source={{ uri: song.artworkUri }} style={styles.artImage} contentFit="cover" />
+        ) : (
+          <View style={styles.artPlaceholder}>
+            <Text style={styles.artNote}>♪</Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -125,7 +126,7 @@ const styles = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: SCREEN.bg },
   details: { paddingHorizontal: 8, paddingTop: 6, paddingBottom: 6 },
   title: { color: '#fff', fontSize: 13, fontWeight: '700', textAlign: 'center' },
-  sub: { color: '#c8c8c8', fontSize: 11, marginTop: 2, textAlign: 'center' },
+  sub: { color: '#c8c8c8', fontSize: 11, marginTop: 2 },
   icons: { flexDirection: 'row', gap: 6, marginTop: 4, minHeight: 14 },
   glyph: { fontSize: 11 },
   block: { marginTop: 6 },
